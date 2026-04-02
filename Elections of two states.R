@@ -61,8 +61,8 @@ map_va_in <- popu_va_1 |>
   theme_map() +
   labs(title="Election for the state of Virgina in 2020",
        subtitle= "Vote percentage of presidtial and sentor race") +
-  theme(plot.title = element_text(hjust = 0.5, size=15)) +
-  theme(plot.subtitle = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5, vjust=0.3,size=15)) +
+  theme(plot.subtitle = element_text(hjust = 0.5, vjust = 0.1))
 
 ggplotly(map_va_in, tooltip = "text") |>
   style(hoveron = "fill") 
