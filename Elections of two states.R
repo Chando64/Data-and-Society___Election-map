@@ -6,23 +6,24 @@ library(ggredist)
 library(dplyr)
 library(redistmetrics)
 library(sf)
-map_fl <- alarm_50state_map('FL')
-plans_fl <- alarm_50state_plans('FL')
+
 map_va <- alarm_50state_map('VA')
 plans_va <- alarm_50state_plans('VA')
 
-
 map_va |> 
   ggplot() +
-  geom_district(aes(group = cd_2020, fill = adv_16, denom = arv_16 + adv_16)) +
+  geom_district(aes(group = cd_2020, fill = ndv, denom = ndv + nrv)) +
+  geom_sf(fill = NA, color = "white", linewidth = 0.1, alpha = 0.3) + 
   scale_fill_party_c() +
   theme_map()
+
 
 map_va |> 
   ggplot() +
   geom_district(aes(group = cd_2020, fill = ndv, denom = ndv + nrv)) +
   scale_fill_party_c() +
   theme_map()
+
 
 map_fl |> 
   st_make_valid() |>  #fixes the "hole to shell" issue
@@ -60,27 +61,31 @@ map_va_in <- popu_va_1 |>
   scale_fill_party_c() +
   theme_map() +
   labs(title="Election for the state of Virgina in 2020",
-       subtitle= "Vote percentage of presidtial and sentor race") +
-  theme(plot.title = element_text(hjust = 0.5, vjust=0.3,size=15)) +
-  theme(plot.subtitle = element_text(hjust = 0.5, vjust = 0.1))
+       subtitle= "Vote percentage of presidtial and sentor race")
 
 ggplotly(map_va_in, tooltip = "text") |>
   style(hoveron = "fill") 
 
 
-map_fl_in <- popu_fl_1 |>
-  ggplot(aes(fill = vote_share,
-             text=paste("District: ", cd_2020, "\n",
-                        "Hispanic population: ", round(prop_hisp, digits = 2),"%", "\n",
-                        "White Population: ", round(prop_white, digits = 2), "%", "\n",
-                        "Black Population: ", round(prop_black, digits = 2), "%", "\n",
-                        "Native Population: ", round(prop_aian, digits = 2), "%", "\n",
-                        "Asian Population: ", round(prop_asian, digits = 2), "%", "\n",
-                        "Islander Population: ", round(prop_nhpi, digits = 2), "%", "\n",
-                        "Other Population : ", round(prop_other, digits = 2), "%", "\n",
-                        sep=""))) +
-  geom_sf(color = "gray", size = 2) +
+map_va_in1 <- popu_va_1 |>
+  ggplot(aes(fill = vote_share, text = paste(
+    "District: ", cd_2020, "\n",
+    "Presidential Race\n",
+    "Joe Biden(D) vote percentage: ", round(prop_priz_20_bid, digits = 2), "%", "\n",
+    "Donald Trump(R) vote percentage: ", round(prop_priz_20_tru, digits = 2), "%", "\n",
+    "Senator Race\n",
+    "Mark Warner(D) vote percentage: ", round(prop_uss_20_war, digits = 2), "%", "\n",
+    "Daniel Gade(R) vote percentage: ", round(prop_uss_20_ga, digits = 2), "%", "\n",
+    sep = ""
+  ))) +
+  geom_sf(data= map_va, color = "white", linewidth = 0.05, add = TRUE) + 
+  geom_district(aes(group = cd_2020), fill = NA, color = "black", linewidth = 0.6) +
   scale_fill_party_c() +
-  theme_map()
-#map_fl_in1 <- sf::st_coordinates(sf::st_cast(sf::st_geometry(map_fl_in), "MULTIPOLYGON"))#
-ggplotly(map_fl_in, tooltip = "text")
+  theme_map() +
+  labs(
+    title = "Election for the state of Virginia in 2020",
+    subtitle = "Vote percentage of presidential and senator race"
+  )
+
+ggplotly(map_va_in1, tooltip = "text") |>
+  style(hoveron = "fill")
