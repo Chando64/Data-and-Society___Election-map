@@ -6,49 +6,22 @@ library(ggredist)
 library(dplyr)
 library(redistmetrics)
 library(sf)
+library(PL94171)
+library(tinytiger)
 
-map_va <- alarm_50state_map('VA')
-plans_va <- alarm_50state_plans('VA')
+# get the data for Virginia's, this may take a while
+pl_raw_va <- pl_read(pl_url("VA", 2020))
 
-map_va_2 <- map_va |>
-  group_by(cd_2020) |>
-  summarize(
-    vote_share = sum(ndv)/(sum(ndv)+sum(nrv)),
-    vote_count = sum(ndv)+sum(nrv)
-  )
+# for redistricting we care about state-congressional districts so we group to 500 (if we want cds)
+# precincts are 700 when we are looking at voting data
+pl_va <- pl_subset(pl_raw_va, sumlev="700") |>
+  pl_select_standard(clean_names=TRUE)
 
+# load FL geometry
+va_vds <- tt_voting_districts("Va")
+names(va_vds) <- sub("(20)+$", "", names(va_vds))
 
-map_va_2 |>
-  ggplot() +
-  geom_district(aes(group = cd_2020, fill = Vote_count)) +
-  geom_sf(color = "black") + 
-  scale_fill_party_c() +
-  theme_map()
+pl_geo <- full_join(pl, va_vds, by="GEOID")
 
-
-
-map_va_1 <- map_va |>
-  ggplot() +
-  geom_sf(color = "gray", linewidth = 0.1, aes(group = cd_2020, fill = (ndv/(ndv+nrv)))) + 
-  geom_district(aes(group = cd_2020, fill = ndv, denom = ndv + nrv)) +
-  scale_fill_party_c() +
-  theme_map()
-
-ggplotly(map_va_1, tooltip = "text")
-
-
-
-map_va |> 
-  ggplot() +
-  geom_district(aes(group = cd_2020, fill = ndv, denom = ndv + nrv)) +
-  geom_sf(color = "gray", linewidth = 0.1, alpha = 0.3) + 
-  scale_fill_party_c() +
-  theme_map()
-
-map_va |> 
-  ggplot() +
-  geom_district(aes(group = county), fill=(adv_20/(adv_20+arv_20))) +
-  geom_sf(color = "gray", linewidth = 0.01, alpha = 0.3, alpha = 0.1) + 
-  geom_sf(aes(group = cd_2020), color = "white", linewidth = 0.5, alpha = 0.1)+
-  scale_fill_party_c() +
-  theme_map()
+# remove the raw data as we no longer need it
+rm(pl_raw_va)

@@ -1,21 +1,63 @@
-map_va_in <- ggplot() + 
-  geom_sf(data = map_va, fill = NA, color = "black", linewidth = 0.02, alpha = 0.9)+
-  geom_sf(data = popu_va_1, 
-          aes(fill = vote_share,
-              text = paste(
-                "District: ", cd_2020, "\n",
-                "Presidential Race\n",
-                "Joe Biden(D): ", round(prop_priz_20_bid, 2), "%\n",
-                "Donald Trump(R): ", round(prop_priz_20_tru, 2), "%\n",
-                "Senator Race\n",
-                "Mark Warner(D): ", round(prop_uss_20_war, 2), "%\n",
-                "Daniel Gade(R): ", round(prop_uss_20_ga, 2), "%",
-                sep = "")), alpha=0.9)+
-   scale_fill_party_c() +
-  theme_map() +
-  labs(title = "Election for the state of Virginia in 2020")
+library(alarmdata)
+library(redist)
+library(ggplot2)
+library(plotly)
+library(ggredist)
+library(dplyr)
+library(redistmetrics)
+library(sf)
+my_map_theme <- function(){
+  theme(panel.background=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title=element_blank())
+}
+map_va <- alarm_50state_map('VA')
+plans_va <- alarm_50state_plans('VA')
 
-ggplotly(map_va_in, tooltip = "text") |> 
-  style(hoveron = "fill", traces = 2)
+####Map of vote percentage of districts
+popu_va_1 <- map_va|>
+  group_by(cd_2020) |>
+  summarise(
+    prop_priz_16_cli = (sum(pre_16_dem_cli)/(sum(pre_16_dem_cli)+sum(pre_16_rep_tru)))*100,
+    prop_priz_16_tru=(sum(pre_16_rep_tru)/(sum(pre_16_dem_cli)+sum(pre_16_rep_tru)))*100,
+    prop_uss_18_kai=(sum(uss_18_rep_ste)/(sum(uss_18_dem_kai)+sum(uss_18_rep_ste)))*100,
+    prop_uss_18_ste=(sum(uss_18_dem_kai)/(sum(uss_18_dem_kai)+sum(uss_18_rep_ste)))*100,
+    prop_priz_20_bid=(sum(pre_20_dem_bid)/(sum(pre_20_dem_bid)+sum(pre_20_rep_tru)))*100,
+    prop_priz_20_tru=(sum(pre_20_rep_tru)/(sum(pre_20_dem_bid)+sum(pre_20_rep_tru)))*100,
+    prop_uss_20_war=(sum(uss_20_dem_war)/(sum(uss_20_dem_war)+sum(uss_20_rep_gad)))*100,
+    prop_uss_20_ga=(sum(uss_20_rep_gad)/(sum(uss_20_dem_war)+sum(uss_20_rep_gad)))*100,
+    vote_share = sum(ndv) / (sum(ndv) + sum(nrv))
+  )
+
+map_va_in <- popu_va_1 |>
+  ggplot(aes(fill = vote_share,text=paste(
+    "District: ", cd_2020, "\n",
+    "Presidential Race\n",
+    "Joe Biden(D) vote percentage: ", round(prop_priz_20_bid, digits = 2),"%", "\n",
+    "Donald Trump(R) vote percentage: ", round(prop_priz_20_tru, digits = 2), "%", "\n",
+    "Senator Race\n",
+    "Mark Warner(D) vote percentage: ", round(prop_uss_20_war, digits = 2), "%", "\n",
+    "Daniel Gade(R) vote percentage: ", round(prop_uss_20_ga, digits = 2), "%", "\n",
+    sep=""))) +
+  geom_sf(color = "gray", size = 2) +
+  scale_fill_party_c() +
+  theme_map() +
+  labs(title="Election for the state of Virgina in 2020",
+       subtitle= "Vote percentage of presidtial and sentor race")
+
+ggplotly(map_va_in, tooltip = "text") |>
+  style(hoveron = "fill") 
+
+
+####Map of precincts with interaction
+map_va_1 <- map_va |>
+  ggplot() +
+  geom_sf(color = "gray", linewidth = 0.1, aes(group = cd_2020, fill = (ndv/(ndv+nrv)))) + 
+  geom_district(aes(group = cd_2020, fill = ndv, denom = ndv + nrv)) +
+  scale_fill_party_c() +
+  theme_map()
+
+ggplotly(map_va_1, tooltip = "text")
 
 
