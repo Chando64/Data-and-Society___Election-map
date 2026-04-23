@@ -49,15 +49,15 @@ map_va_in <- popu_va_1 |>
 ggplotly(map_va_in, tooltip = "text") |>
   style(hoveron = "fill") 
 
+###############################################################################
+Rich_map <- map_va_22 |>
+  ggplot(aes(fill = inc_level,
+             text = paste0(county, " — Median classification: ", inc_level))) +
+  geom_sf() +
+  labs( title = "Virginia Median Household Income",
+    subtitle = "High: > $100,000; Medium: $50,000–$100,000; Low: < $50,000",
+    fill = "Income level") +
+  theme_void()
 
-####Map of precincts with interaction
-map_va_1 <- map_va |>
-  ggplot() +
-  geom_sf(color = "gray", linewidth = 0.1, aes(group = cd_2020, fill = (ndv/(ndv+nrv)))) + 
-  geom_district(aes(group = cd_2020, fill = ndv, denom = ndv + nrv)) +
-  scale_fill_party_c() +
-  theme_map()
-
-ggplotly(map_va_1, tooltip = "text")
-
-
+ggplotly(Rich_map, tooltip = "text") |>
+  style(hoveron = "fill")

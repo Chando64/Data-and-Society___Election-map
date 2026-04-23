@@ -28,7 +28,7 @@ plans_va <- alarm_50state_plans('VA')
 
 map_va |> 
   ggplot() +
-  geom_district(aes(group = cd_2020, fill = ndv, denom = ndv + nrv)) +
+  geom_district(aes(group = county, fill = ndv, denom = ndv + nrv)) +
   geom_sf(color = "gray", linewidth = 0.1, alpha = 0.3) + 
   scale_fill_party_c() +
   theme_map()
@@ -42,18 +42,9 @@ map_fl |>
 
 ```
 
-### Interactive maps
+### Interactive map
 
 ```{r}
-map_va_1 <- map_va |>
-  ggplot() +
-  geom_district(aes(group = cd_2020, fill = ndv, denom = ndv + nrv)) +
-  geom_sf(color = "gray", linewidth = 0.1, alpha = 0.3) + 
-  scale_fill_party_c() +
-  theme_map()
-
-ggplotly(map_va_1, tooltip = "text")
-
 
 popu_va_1 <- map_va|>
   group_by(cd_2020) |>
@@ -88,6 +79,16 @@ map_va_in <- popu_va_1 |>
 
 ggplotly(map_va_in, tooltip = "text") |>
   style(hoveron = "fill") 
+
+map_va_1 <- map_va |>
+  ggplot() +
+  geom_sf(color = "gray", linewidth = 0.1, aes(group = cd_2020, fill = (ndv/(ndv+nrv)))) + 
+  geom_district(aes(group = cd_2020, fill = ndv, denom = ndv + nrv)) +
+  scale_fill_party_c() +
+  theme_map()
+
+ggplotly(map_va_1, tooltip = "text")
+
 
 
 ```

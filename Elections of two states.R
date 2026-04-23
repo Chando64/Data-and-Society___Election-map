@@ -21,12 +21,14 @@ map_va_2 <- map_va |>
   summarize(
     vote_count = sum(adv_20)+sum(arv_20)
   )
+
+map_va_2 <- 
 ggplot(map_va_2) +
   geom_sf(aes(fill=vote_count)) +
-  scale_fill_continuous(low="green", high = "black" , name = "Voters Population") + 
-  labs(title = "Virginia's Voters population",
-       subtitle = "Voting population of each district where dark 
-indicates dense population and light green indicates high voting population")+
+  scale_fill_continuous(low="green", high = "black" , name = "Total number of Votes") + 
+  labs(title = "Virginia's Total Votes ",
+       subtitle = "Number of votes of each district where dark 
+indicates high number of votes and light green indicates low number of votes")+
   theme_void() 
 
 #### Map of vote count of precincts
