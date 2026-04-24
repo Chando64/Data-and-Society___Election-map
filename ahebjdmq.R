@@ -16,6 +16,7 @@ va_inc_2023_cnty <- read_csv("va_inc_2023_cnty/va_inc_2023_cnty.csv")
 va_race_2023_cnty <- read_csv("va_race_2023_cnty/va_race_2023_cnty.csv")
 va_edu_2023_cnty <- read_csv("va_edu_2023_cnty/va_edu_2023_cnty.csv")
 va_pov_2023_cnty <- read_csv("va_pov_2023_cnty/va_pov_2023_cnty.csv")
+va_dd <- 
 
 va_race_inc <- inner_join(va_inc_2023_cnty, va_race_2023_cnty, 
                           by = c("COUNTYFP", "GEOID", "STATE", "COUNTY"))
@@ -25,8 +26,8 @@ va_all <- inner_join(va_race_inc, va_pov_edu,
                      by = c("COUNTYFP", "GEOID", "STATE", "COUNTY"))
 
 va_all_1 <- va_all |>
-  group_by(COUNTYFP) |>
-  summarise(
+  group_by(COUNTY) |>
+  mutate(
     per_HS = (HS_DIP23/POP_25OV23)*100,
     per_noedu = (N_HSDIP23/POP_25OV23)*100 ,
     per_somcoll = (N_HSDIP23/POP_25OV23)*100 ,
@@ -39,26 +40,27 @@ va_all_1 <- va_all |>
     tot_med = mean(MEDN_INC23),
     tot_mar = (sum(TOT_MAR23)/sum(TOT_HOUS23.x))*100,
     tot_chi = (sum(TOT_CHI23)/sum(TOT_HOUS23.x))*100
-  )
+  ) |>
+  ungroup()
 
 va_all_2 <- va_all |>
-  group_by(COUNTYFP)|>
+  group_by(COUNTY)|>
   summarise(inc_level = case_when(
     MEDN_INC23 >= 115000                      ~ "High",
     MEDN_INC23 > 50000 & MEDN_INC23 < 115000 ~ "Medium",
     MEDN_INC23 <= 50000                       ~ "Low",
     TRUE                                      ~ NA_character_))
 va_all_3 <- va_all_1 |>
-  group_by(COUNTYFP) |>
+  group_by(COUNTY) |>
   summarise(edu_level =case_when(
     per_BA > 15 ~ "Above 15%",
     per_BA < 15 ~ "Below 15%"
   ))
 
 va_all_4 <- inner_join(va_all_1, va_all_2, 
-                     by = c("COUNTYFP"))
+                     by = c("COUNTY"))
 va_all_5 <- inner_join(va_all_4, va_all_3, 
-                     by = c("COUNTYFP"))
+                     by = c("COUNTY"))
 
 va_all_5$inc_level <- factor(va_all_5$inc_level,
                              levels = c("Low", "Medium", "High"),
@@ -85,19 +87,15 @@ va_all_2 <- va_all |>
   group_by(COUNTY)|>
   summarise(inc_level = case_when(
     MEDN_INC23 >= 100000                      ~ "High",
-    MEDN_INC23 > 50000 & MEDN_INC23 < 100000 ~ "Medium",
-    MEDN_INC23 <= 50000                       ~ "Low",
+    MEDN_INC23 > 69300 & MEDN_INC23 < 100000 ~ "Medium",
+    MEDN_INC23 <= 69200                       ~ "Low",
     TRUE                                      ~ NA_character_))
-map_va_2 <- map_va |>
-  group_by(county) |>
-  summarize(
-    pop_c = sum(pop)
-  )
-map_va_22 <- inner_join( map_va_2, va_all_2,
-                         by = c("county"="COUNTY" ))
-                        
-  
-ggplot(map_va_22) +
+
+map_va_22 <- inner_join( map_va_2, va_all_5,
+                         by = c("COUNTY" ))
+map_va_23 <- map_va_22 |> left_join(va_cit_2023_cnty, by = "COUNTY")
+
+ggplot(map_va_23) +
   geom_sf(aes(fill=inc_level))  + 
   labs(title = "Virginia's Median Household Income ",
        subtitle = "The median household income level of each county where High is above $100,000, Median 
