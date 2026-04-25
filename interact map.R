@@ -13,7 +13,6 @@ my_map_theme <- function(){
         axis.title=element_blank())
 }
 map_va <- alarm_50state_map('VA')
-plans_va <- alarm_50state_plans('VA')
 
 ####Map of vote percentage of districts
 popu_va_1 <- map_va|>
@@ -61,3 +60,4 @@ Rich_map <- map_va_22 |>
 
 ggplotly(Rich_map, tooltip = "text") |>
   style(hoveron = "fill")
+

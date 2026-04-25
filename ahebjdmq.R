@@ -9,14 +9,17 @@ library(sf)
 library(PL94171)
 library(tinytiger)
 library(tidyr)
+library(dplyr)
+library(alarmdata)
 library(readr)
-
+map_va <- alarm_50state_map('VA')
 va_cit_2023_cnty <- read_csv("va_cit_2023_cnty/va_cit_2023_cnty.csv")
 va_inc_2023_cnty <- read_csv("va_inc_2023_cnty/va_inc_2023_cnty.csv")
 va_race_2023_cnty <- read_csv("va_race_2023_cnty/va_race_2023_cnty.csv")
 va_edu_2023_cnty <- read_csv("va_edu_2023_cnty/va_edu_2023_cnty.csv")
 va_pov_2023_cnty <- read_csv("va_pov_2023_cnty/va_pov_2023_cnty.csv")
-va_dd <- 
+
+map_va$GEOID <- as.numeric(substr(as.character(map_va$GEOID), 1, 5))
 
 va_race_inc <- inner_join(va_inc_2023_cnty, va_race_2023_cnty, 
                           by = c("COUNTYFP", "GEOID", "STATE", "COUNTY"))
@@ -26,8 +29,8 @@ va_all <- inner_join(va_race_inc, va_pov_edu,
                      by = c("COUNTYFP", "GEOID", "STATE", "COUNTY"))
 
 va_all_1 <- va_all |>
-  group_by(COUNTY) |>
-  mutate(
+  group_by(COUNTY, GEOID) |>
+  summarise(
     per_HS = (HS_DIP23/POP_25OV23)*100,
     per_noedu = (N_HSDIP23/POP_25OV23)*100 ,
     per_somcoll = (N_HSDIP23/POP_25OV23)*100 ,
@@ -44,66 +47,58 @@ va_all_1 <- va_all |>
   ungroup()
 
 va_all_2 <- va_all |>
-  group_by(COUNTY)|>
+  group_by(COUNTY, GEOID)|>
   summarise(inc_level = case_when(
-    MEDN_INC23 >= 115000                      ~ "High",
-    MEDN_INC23 > 50000 & MEDN_INC23 < 115000 ~ "Medium",
-    MEDN_INC23 <= 50000                       ~ "Low",
+    MEDN_INC23 >= 100000                      ~ "High",
+    MEDN_INC23 > 69200 & MEDN_INC23 < 100000 ~ "Medium",
+    MEDN_INC23 <= 69200                      ~ "Low",
     TRUE                                      ~ NA_character_))
 va_all_3 <- va_all_1 |>
-  group_by(COUNTY) |>
+  group_by(COUNTY, GEOID) |>
   summarise(edu_level =case_when(
     per_BA > 15 ~ "Above 15%",
     per_BA < 15 ~ "Below 15%"
   ))
 
 va_all_4 <- inner_join(va_all_1, va_all_2, 
-                     by = c("COUNTY"))
+                     by = c("COUNTY", "GEOID"))
 va_all_5 <- inner_join(va_all_4, va_all_3, 
-                     by = c("COUNTY"))
+                     by = c("COUNTY", "GEOID"))
+####Done in this order
+map_va_23<- left_join(map_va, va_all_5, by = c("GEOID"))
+map_va_23 <- map_va_23[,-c(8:40)]
 
-va_all_5$inc_level <- factor(va_all_5$inc_level,
-                             levels = c("Low", "Medium", "High"),
-                             ordered = TRUE)
-
-g <- ggplot(data = va_all_5, mapping = aes(x = tot_med, y = per_BA))
-g + geom_jitter(aes(
-  color = per_bpov, size = tot_mar), width = 0.2, height = 0, alpha = 0.8) +
-  scale_color_gradient(low = "gray", high = "purple") +
-  labs(
-title = "Relationship between household income and 
-  education level between counties in Virginia",
-    subtitle = "Data used from the Data Hub",
-    y = "Percentage of people 25yr+ with\na bachelor's degree (in percentages)",
-    x = "Median household income (in dollars)",
-    color = "Percent of household below\npoverty line",
-    size = "Percentage of couple households 
-with related children"
-  ) +
-  theme_minimal()
-
-
-va_all_2 <- va_all |>
-  group_by(COUNTY)|>
-  summarise(inc_level = case_when(
-    MEDN_INC23 >= 100000                      ~ "High",
-    MEDN_INC23 > 69300 & MEDN_INC23 < 100000 ~ "Medium",
-    MEDN_INC23 <= 69200                       ~ "Low",
-    TRUE                                      ~ NA_character_))
-
-map_va_22 <- inner_join( map_va_2, va_all_5,
-                         by = c("COUNTY" ))
-map_va_23 <- map_va_22 |> left_join(va_cit_2023_cnty, by = "COUNTY")
-
-ggplot(map_va_23) +
-  geom_sf(aes(fill=inc_level))  + 
-  labs(title = "Virginia's Median Household Income ",
-       subtitle = "The median household income level of each county where High is above $100,000, Median 
-is between $100,000 to $50,000, and low is under $50,000",
-       fill = "Income Level")+
-  theme_void() 
+map_va_23a <- map_va_23 |> 
+  filter(cd_2020 == 1)
+map_va_23b <- map_va_23 |> 
+  filter(cd_2020 == 2)
+map_va_23c <- map_va_23 |> 
+  filter(cd_2020 == 3)
+map_va_23d <- map_va_23 |> 
+  filter(cd_2020 == 4)
+map_va_23e <- map_va_23 |> 
+  filter(cd_2020 == 5)
+map_va_23f <- map_va_23 |> 
+  filter(cd_2020 == 6)
+map_va_23g <- map_va_23 |> 
+  filter(cd_2020 == 7)
+map_va_23h <- map_va_23 |> 
+  filter(cd_2020 == 8)
 
 
+map_va_in_23a <- map_va_23 |>
+  ggplot(aes(fill = per_bpov,ids = county, text = paste0(
+               "County: ", county, "\n",
+               "Socio-Economic Status\n",
+               "Percentage graduate from some college: ", round(per_HS, 3)))) +
+  geom_sf() +
+  theme_void() +
+  labs( title = "Virginia's Median Household Income
+High > $100,000; Median $69,200–$100,000; Low < $69,200"
+  ) 
+  
 
+ggplotly(map_va_in_1, tooltip = "text") |>
+  style(hoveron = "fill")
 
 
