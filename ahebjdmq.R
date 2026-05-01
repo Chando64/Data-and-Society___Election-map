@@ -53,52 +53,54 @@ va_all_2 <- va_all |>
     MEDN_INC23 > 69200 & MEDN_INC23 < 100000 ~ "Medium",
     MEDN_INC23 <= 69200                      ~ "Low",
     TRUE                                      ~ NA_character_))
-va_all_3 <- va_all_1 |>
-  group_by(COUNTY, GEOID) |>
-  summarise(edu_level =case_when(
-    per_BA > 15 ~ "Above 15%",
-    per_BA < 15 ~ "Below 15%"
-  ))
+
 
 va_all_4 <- inner_join(va_all_1, va_all_2, 
                      by = c("COUNTY", "GEOID"))
-va_all_5 <- inner_join(va_all_4, va_all_3, 
-                     by = c("COUNTY", "GEOID"))
+
 ####Done in this order
-map_va_23<- left_join(map_va, va_all_5, by = c("GEOID"))
+map_va_23<- left_join(map_va, va_all_4, by = c("GEOID"))
 map_va_23 <- map_va_23[,-c(8:40)]
 
-map_va_23a <- map_va_23 |> 
-  filter(cd_2020 == 1)
-map_va_23b <- map_va_23 |> 
-  filter(cd_2020 == 2)
-map_va_23c <- map_va_23 |> 
-  filter(cd_2020 == 3)
-map_va_23d <- map_va_23 |> 
-  filter(cd_2020 == 4)
-map_va_23e <- map_va_23 |> 
-  filter(cd_2020 == 5)
-map_va_23f <- map_va_23 |> 
-  filter(cd_2020 == 6)
-map_va_23g <- map_va_23 |> 
-  filter(cd_2020 == 7)
-map_va_23h <- map_va_23 |> 
-  filter(cd_2020 == 8)
+map_va_23a <- map_va_23 |>
+  group_by(cd_2020) |> 
+  summarise(
+    pp_scores = comp_polsby(plans = map_va_23$cd_2020, shp = map_va)
+  ) |>
+  ungroup()
+
+####Compactness
+bbox_scores <- comp_bbox_reock(plans = map_va_23$cd_2020, shp = map_va)
+lw_scores<- comp_lw(plans = map_va_23$cd_2020, shp = map_va)
+hul_scores <- comp_ch(plans = map_va_23$cd_2020, shp = map_va)
+kept_scores<- comp_skew(plans = map_va_23$cd_2020, shp = map_va)
+
+map_va_districts <- map_va |>
+  group_by(cd_2020) |>
+  summarise(geometry = sf::st_union(geometry), .groups = 'drop')
+
+map_va_districts$bbox <- bbox_scores
+map_va_districts$hul <- hul_scores
+map_va_districts$lw <- lw_scores
+
+map_va_districts_long <- map_va_districts |>
+  pivot_longer(cols = c(bbox, hul, lw), 
+               names_to = "metric", 
+               values_to = "score")
+
+ggplot(map_va_districts_long) +
+  geom_sf(aes(fill = score), color = "white") +
+  facet_wrap(~metric) +
+  scale_fill_viridis_c(option = "plasma") +
+  labs(title = "Virginia Congressional District Compactness",
+       subtitle = "Four Different Metrics where high score is more compact while low score is less compact.",
+       ) + 
+  scale_fill_gradient(low = "yellow", high = "blue") +
+  theme_void()
 
 
-map_va_in_23a <- map_va_23 |>
-  ggplot(aes(fill = per_bpov,ids = county, text = paste0(
-               "County: ", county, "\n",
-               "Socio-Economic Status\n",
-               "Percentage graduate from some college: ", round(per_HS, 3)))) +
-  geom_sf() +
-  theme_void() +
-  labs( title = "Virginia's Median Household Income
-High > $100,000; Median $69,200–$100,000; Low < $69,200"
-  ) 
-  
+####bbox, hul, lw
 
-ggplotly(map_va_in_1, tooltip = "text") |>
-  style(hoveron = "fill")
+
 
 
