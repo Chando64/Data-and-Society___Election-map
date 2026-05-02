@@ -73,7 +73,6 @@ map_va_23a <- map_va_23 |>
 bbox_scores <- comp_bbox_reock(plans = map_va_23$cd_2020, shp = map_va)
 lw_scores<- comp_lw(plans = map_va_23$cd_2020, shp = map_va)
 hul_scores <- comp_ch(plans = map_va_23$cd_2020, shp = map_va)
-kept_scores<- comp_skew(plans = map_va_23$cd_2020, shp = map_va)
 
 map_va_districts <- map_va |>
   group_by(cd_2020) |>
@@ -82,9 +81,10 @@ map_va_districts <- map_va |>
 map_va_districts$bbox <- bbox_scores
 map_va_districts$hul <- hul_scores
 map_va_districts$lw <- lw_scores
+map_va_districts$score <-((bbox_scores+hul_scores+lw_scores)/3)
 
 map_va_districts_long <- map_va_districts |>
-  pivot_longer(cols = c(bbox, hul, lw), 
+  pivot_longer(cols = c(bbox, hul, lw, score), 
                names_to = "metric", 
                values_to = "score")
 
@@ -93,13 +93,14 @@ ggplot(map_va_districts_long) +
   facet_wrap(~metric) +
   scale_fill_viridis_c(option = "plasma") +
   labs(title = "Virginia Congressional District Compactness",
-       subtitle = "Four Different Metrics where high score is more compact while low score is less compact.",
+       subtitle = "Four Different Metrics where high score is more compact 
+while low score is less compact.",
        ) + 
   scale_fill_gradient(low = "yellow", high = "blue") +
   theme_void()
 
 
-####bbox, hul, lw
+####bbox, hul, lw are best messures
 
 
 
